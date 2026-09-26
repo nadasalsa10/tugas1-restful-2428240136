@@ -1,4 +1,8 @@
 {
+  "name": "tugas1-restful-npm",
+  "version": "1.0.0",
+  "description": "Tugas 1 RESTful API Express.js",
+  "main": "app.js",
   "scripts": {
   "start": "node app.js",
   "dev": "nodemon app.js"
