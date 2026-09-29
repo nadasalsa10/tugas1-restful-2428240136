@@ -45,7 +45,7 @@ let nextId = 4;
 // Menampilkan informasi API
 app.get("/", (req, res) => {
   res.json({
-    nama: "RESTful API Liga Sepak Bola",
+    nama: "Nada Salsabilah",
     nim: "2428240136",
     topik: 24,
     endpoint: [
