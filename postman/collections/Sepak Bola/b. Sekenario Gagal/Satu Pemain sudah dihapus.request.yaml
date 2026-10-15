@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/players/{{playerId}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: "pm.test('Status code adalah 404', function () {\r
+
+      \  pm.response.to.have.status(404);\r
+
+      });\r
+
+      \r
+
+      pm.test('Pesan memuat tidak ditemukan', function () {\r
+
+      \  const jsonData = pm.response.json();\r
+
+      \  pm.expect(jsonData.message).to.include('tidak ditemukan');\r
+
+      });"
+    language: text/javascript
+order: 4000

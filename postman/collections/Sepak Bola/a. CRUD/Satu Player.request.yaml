@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/players/{{playerId}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status code adalah 200\", () => {\r
+
+      \  pm.response.to.have.status(200);\r
+
+      });\r
+
+      pm.test(\"Pemain yang dikembalikan adalah pemain yang baru ditambahkan\", () => {\r
+
+      \  const json = pm.response.json();\r
+
+      \  pm.expect(json.id).to.eql(Number(pm.environment.get(\"playerId\")));\r
+
+      \  pm.expect(json.nama).to.eql(\"Budi Santoso\");\r
+
+      });"
+    language: text/javascript
+order: 3000

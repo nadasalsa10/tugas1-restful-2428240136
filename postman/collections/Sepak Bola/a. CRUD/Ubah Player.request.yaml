@@ -1,0 +1,42 @@
+$kind: http-request
+url: "{{base_url}}/players/{{playerId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  x-api-key: "{{api-key}}"
+body:
+  type: json
+  content: "{\r
+
+    \  \"nama\": \"Budi Santoso\",\r
+
+    \  \"klub\": \"Persija Jakarta\",\r
+
+    \  \"posisi\": \"gelandang\",\r
+
+    \  \"nomorPunggung\": 12\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "pm.test('Status code adalah 200', function () {\r
+
+      \  pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test('Data pemain berhasil diubah', function () {\r
+
+      \  const json = pm.response.json();\r
+
+      \  const p = json.data ? json.data : json;\r
+
+      \  pm.expect(p.id).to.eql(Number(pm.environment.get('playerId')));\r
+
+      \  pm.expect(p.nomorPunggung).to.eql(12);\r
+
+      });"
+    language: text/javascript
+order: 4000

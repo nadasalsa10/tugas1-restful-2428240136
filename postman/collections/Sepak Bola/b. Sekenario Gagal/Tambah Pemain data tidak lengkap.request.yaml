@@ -1,0 +1,30 @@
+$kind: http-request
+url: "{{base_url}}/players"
+method: POST
+headers:
+  Content-Type: application/json
+  x-api-key: "{{api-key}}"
+body:
+  type: json
+  content: '{ "nama": "Pemain Tanpa Data" }'
+scripts:
+  - type: afterResponse
+    code: "pm.test('Status code adalah 400', function () {\r
+
+      \  pm.response.to.have.status(400);\r
+
+      });\r
+
+      \r
+
+      pm.test('Response error dan pesan memuat wajib diisi', function () {\r
+
+      \  const jsonData = pm.response.json();\r
+
+      \  pm.expect(jsonData.status).to.eql('error');\r
+
+      \  pm.expect(jsonData.message).to.include('wajib diisi');\r
+
+      });"
+    language: text/javascript
+order: 2000

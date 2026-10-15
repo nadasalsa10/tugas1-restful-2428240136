@@ -1,0 +1,28 @@
+$kind: http-request
+url: "{{base_url}}/"
+method: GET
+scripts:
+  - type: afterResponse
+    code: "pm.test('Status code adalah 200', function () {\r
+
+      \  pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test('Response memuat nama, nim, dan daftar endpoint', function () {\r
+
+      \  const jsonData = pm.response.json();\r
+
+      \  const info = jsonData.data ? jsonData.data : jsonData;\r
+
+      \  pm.expect(info).to.have.property('nama');\r
+
+      \  pm.expect(info).to.have.property('nim');\r
+
+      \  pm.expect(info).to.have.property('endpoint');\r
+
+      });"
+    language: text/javascript
+order: 7000

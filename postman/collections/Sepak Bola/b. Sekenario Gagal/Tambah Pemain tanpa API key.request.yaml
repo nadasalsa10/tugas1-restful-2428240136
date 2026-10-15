@@ -1,0 +1,39 @@
+$kind: http-request
+url: "{{base_url}}/players"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: "{\r
+
+    \  \"nama\": \"Pemain Tanpa Kunci\",\r
+
+    \  \"klub\": \"Persija Jakarta\",\r
+
+    \  \"posisi\": \"gelandang\",\r
+
+    \  \"nomorPunggung\": 10\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "pm.test('Status code adalah 401', function () {\r
+
+      \  pm.response.to.have.status(401);\r
+
+      });\r
+
+      \r
+
+      pm.test('Response error dan pesan API key tidak valid', function () {\r
+
+      \  const jsonData = pm.response.json();\r
+
+      \  pm.expect(jsonData.status).to.eql('error');\r
+
+      \  pm.expect(jsonData.message).to.include('API key tidak valid');\r
+
+      });"
+    language: text/javascript
+order: 3000

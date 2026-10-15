@@ -1,0 +1,26 @@
+$kind: http-request
+url: "{{base_url}}/players/{{playerId}}"
+method: DELETE
+headers:
+  x-api-key: "{{api-key}}"
+scripts:
+  - type: afterResponse
+    code: "pm.test('Status code adalah 200', function () {\r
+
+      \  pm.response.to.have.status(200);\r
+
+      });\r
+
+      \r
+
+      pm.test('Pemain berhasil dihapus', function () {\r
+
+      \  const jsonData = pm.response.json();\r
+
+      \  pm.expect(jsonData.message).to.include('berhasil dihapus');\r
+
+      \  pm.expect(jsonData.data).to.eql(null);\r
+
+      });"
+    language: text/javascript
+order: 5000
