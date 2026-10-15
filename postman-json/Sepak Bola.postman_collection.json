@@ -1,0 +1,523 @@
+{
+  "info": {
+    "name": "Sepak Bola",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "a. CRUD",
+      "item": [
+        {
+          "name": "Semua Player",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Test script request GET: Semua Pemain",
+                  "pm.test(\"Status code adalah 200\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response berupa array berisi minimal 3 pemain\", () => {",
+                  "  const jsonData = pm.response.json();",
+                  "  pm.expect(jsonData).to.be.an(\"array\");",
+                  "  pm.expect(jsonData.length).to.be.at.least(3);",
+                  "});",
+                  "",
+                  "pm.test(\"Setiap pemain memiliki field id, nama, klub, posisi, dan nomorPunggung\", () => {",
+                  "  const json = pm.response.json();",
+                  "  json.forEach((p) => {",
+                  "    pm.expect(p).to.include.keys(\"id\", \"nama\", \"klub\", \"posisi\", \"nomorPunggung\");",
+                  "  });",
+                  "});",
+                  "",
+                  "pm.test(\"Data pemain pertama bernama Fajar Ramadhan\", () => {",
+                  "  const jsonData = pm.response.json();",
+                  "  pm.expect(jsonData[0].nama).to.eql(\"Fajar Ramadhan\");",
+                  "});",
+                  "",
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/players",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Tambah Player",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Data baru memiliki id dan nama sesuai kiriman', function () {",
+                  "  const jsonData = pm.response.json();",
+                  "  pm.expect(jsonData.status).to.eql('success');",
+                  "  pm.expect(jsonData.data).to.have.property('id');",
+                  "  pm.expect(jsonData.data.id).to.be.a('number');",
+                  "  pm.expect(jsonData.data.nama).to.eql('Budi Santoso');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "  pm.environment.set('playerId', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{api-key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/players",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 4,\n  \"nama\": \"Budi Santoso\",\n  \"klub\": \"Persija Jakarta\",\n  \"posisi\": \"gelandang\",\n  \"nomorPunggung\": 8\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Satu Player",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code adalah 200\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Pemain yang dikembalikan adalah pemain yang baru ditambahkan\", () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id).to.eql(Number(pm.environment.get(\"playerId\")));",
+                  "  pm.expect(json.nama).to.eql(\"Budi Santoso\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/players/{{playerId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players",
+                "{{playerId}}"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Ubah Player",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Data pemain berhasil diubah', function () {",
+                  "  const json = pm.response.json();",
+                  "  const p = json.data ? json.data : json;",
+                  "  pm.expect(p.id).to.eql(Number(pm.environment.get('playerId')));",
+                  "  pm.expect(p.nomorPunggung).to.eql(12);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{api-key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/players/{{playerId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players",
+                "{{playerId}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Budi Santoso\",\n  \"klub\": \"Persija Jakarta\",\n  \"posisi\": \"gelandang\",\n  \"nomorPunggung\": 12\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Hapus Player",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Pemain berhasil dihapus', function () {",
+                  "  const jsonData = pm.response.json();",
+                  "  pm.expect(jsonData.message).to.include('berhasil dihapus');",
+                  "  pm.expect(jsonData.data).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api-key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/players/{{playerId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players",
+                "{{playerId}}"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Filter Player berdasarkan posisi",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Semua pemain hasil filter berposisi gelandang', function () {",
+                  "  const jsonData = pm.response.json();",
+                  "  const players = Array.isArray(jsonData) ? jsonData : jsonData.data;",
+                  "  pm.expect(players).to.be.an('array');",
+                  "  pm.expect(players.length).to.be.at.least(1);",
+                  "  players.forEach(function (p) {",
+                  "    pm.expect(p.posisi).to.eql('gelandang');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/players?posisi=gelandang&posisi=gelandang",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players"
+              ],
+              "query": [
+                {
+                  "key": "posisi",
+                  "value": "gelandang"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "info API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response memuat nama, nim, dan daftar endpoint', function () {",
+                  "  const jsonData = pm.response.json();",
+                  "  const info = jsonData.data ? jsonData.data : jsonData;",
+                  "  pm.expect(info).to.have.property('nama');",
+                  "  pm.expect(info).to.have.property('nim');",
+                  "  pm.expect(info).to.have.property('endpoint');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ],
+              "query": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "b. Sekenario Gagal",
+      "item": [
+        {
+          "name": "Satu Pemain id tidak ada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Response error dan data bernilai null', function () {",
+                  "  const jsonData = pm.response.json();",
+                  "  pm.expect(jsonData.status).to.eql('error');",
+                  "  pm.expect(jsonData.data).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/players/999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players",
+                "999"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Tambah Pemain data tidak lengkap",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response error dan pesan memuat wajib diisi', function () {",
+                  "  const jsonData = pm.response.json();",
+                  "  pm.expect(jsonData.status).to.eql('error');",
+                  "  pm.expect(jsonData.message).to.include('wajib diisi');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{api-key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/players",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"nama\": \"Pemain Tanpa Data\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Tambah Pemain tanpa API key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response error dan pesan API key tidak valid', function () {",
+                  "  const jsonData = pm.response.json();",
+                  "  pm.expect(jsonData.status).to.eql('error');",
+                  "  pm.expect(jsonData.message).to.include('API key tidak valid');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/players",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Pemain Tanpa Kunci\",\n  \"klub\": \"Persija Jakarta\",\n  \"posisi\": \"gelandang\",\n  \"nomorPunggung\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Satu Pemain sudah dihapus",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code adalah 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Pesan memuat tidak ditemukan', function () {",
+                  "  const jsonData = pm.response.json();",
+                  "  pm.expect(jsonData.message).to.include('tidak ditemukan');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/players/{{playerId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "players",
+                "{{playerId}}"
+              ],
+              "query": []
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
