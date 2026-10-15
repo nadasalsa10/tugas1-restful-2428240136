@@ -10,6 +10,22 @@ const PORT = process.env.PORT || 3000;
 // Middleware untuk membaca JSON dari request body
 app.use(express.json());
 
+// Kunci API (dummy untuk tugas). Di Vercel bisa diganti lewat Environment Variable API_KEY.
+const API_KEY = process.env.API_KEY || "player_nada";
+
+// Middleware cekApiKey: hanya meloloskan request yang membawa header x-api-key yang benar
+function cekApiKey(req, res, next) {
+  if (req.headers["x-api-key"] !== API_KEY) {
+    return res.status(401).json({
+      status: "error",
+      message: "API key tidak valid",
+      data: null
+    });
+  }
+
+  next();
+}
+
 // Data awal pemain
 let players = [
   {
@@ -113,7 +129,7 @@ app.get("/players/:id", (req, res) => {
 //   "kewarganegaraan": "Indonesia"
 // }
 // ======================================================
-app.post("/players", (req, res) => {
+app.post("/players", cekApiKey, (req, res) => {
   const {
     nama,
     klub,
@@ -184,7 +200,7 @@ app.post("/players", (req, res) => {
 //   "kewarganegaraan": "Indonesia"
 // }
 // ======================================================
-app.put("/players/:id", (req, res) => {
+app.put("/players/:id", cekApiKey, (req, res) => {
   const id = parseInt(req.params.id);
 
   const index = players.findIndex((player) => player.id === id);
@@ -259,7 +275,7 @@ app.put("/players/:id", (req, res) => {
 // DELETE /players/:id
 // Menghapus data pemain
 // ======================================================
-app.delete("/players/:id", (req, res) => {
+app.delete("/players/:id", cekApiKey, (req, res) => {
   const id = parseInt(req.params.id);
 
   const index = players.findIndex((player) => player.id === id);
