@@ -86,6 +86,19 @@ app.get("/", (req, res) => {
   });
 });
 
+app.post("/klub", async (req, res) => {
+  try {
+    const klubBaru = await Klub.create(req.body);
+    res.status(201).json({
+      status: "success",
+      message: "Data klub berhasil ditambahkan",
+      data: klubBaru
+    });
+  } catch (error) {
+    res.status(400).json({ status: "error", message: error.message });
+  }
+});
+
 // ======================================================
 // GET /players (DENGAN FILTER, SORT, PROJECTION, PAGINATION)
 // ======================================================
