@@ -4,10 +4,23 @@
   "description": "Tugas 1 RESTful API Express.js",
   "main": "app.js",
   "scripts": {
-  "start": "node app.js",
-  "dev": "nodemon app.js"
-},
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
   "dependencies": {
-    "express": "^5.2.1"
-  }
+    "express": "^5.2.1",
+    "mongoose": "^9.11.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nadasalsa10/tugas1-restful-2428240136.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/nadasalsa10/tugas1-restful-2428240136/issues"
+  },
+  "homepage": "https://github.com/nadasalsa10/tugas1-restful-2428240136#readme"
 }

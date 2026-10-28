@@ -1,5 +1,7 @@
-// Import Express
+// Import Express & Mongoose
 const express = require("express");
+const mongoose = require("mongoose");
+
 
 // Membuat aplikasi Express
 const app = express();
@@ -10,10 +12,50 @@ const PORT = process.env.PORT || 3000;
 // Middleware untuk membaca JSON dari request body
 app.use(express.json());
 
-// Kunci API (dummy untuk tugas). Di Vercel bisa diganti lewat Environment Variable API_KEY.
+// ======================================================
+// 1. SETUP KONEKSI MONGODB
+// ======================================================
+// Ganti URI ini dengan URI database Anda
+const DB_URI = 'mongodb://127.0.0.1:27017/tugas_sepakbola'; 
+
+mongoose.connect(DB_URI)
+  .then(() => console.log('✅ Koneksi ke MongoDB berhasil!'))
+  .catch((err) => console.error('❌ Koneksi MongoDB gagal:', err));
+
+// 1. Buat Schema & Model Klub
+const klubSchema = new mongoose.Schema({
+  nama: { type: String, required: true },
+  kota: String,
+  stadion: String
+});
+const Klub = mongoose.model('Klub', klubSchema);
+
+// 2. Modifikasi Player Schema
+const playerSchema = new mongoose.Schema({
+  nama: { type: String, required: true },
+  klub_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Klub',
+    required: true
+  },
+  posisi: { 
+    type: String, 
+    required: true, 
+    enum: ["kiper", "bek", "gelandang", "penyerang"] 
+  },
+  nomorPunggung: { type: Number, required: true },
+  kewarganegaraan: { type: String, default: "Indonesia" }
+}, { 
+  timestamps: true 
+});
+const Player = mongoose.model('Player', playerSchema);
+// ======================================================
+
+// ======================================================
+// MIDDLEWARE API KEY
+// ======================================================
 const API_KEY = process.env.API_KEY || "player_nada";
 
-// Middleware cekApiKey: hanya meloloskan request yang membawa header x-api-key yang benar
 function cekApiKey(req, res, next) {
   if (req.headers["x-api-key"] !== API_KEY) {
     return res.status(401).json({
@@ -22,286 +64,183 @@ function cekApiKey(req, res, next) {
       data: null
     });
   }
-
   next();
 }
 
-// Data awal pemain
-let players = [
-  {
-    id: 1,
-    nama: "Fajar Ramadhan",
-    klub: "Garuda FC",
-    posisi: "gelandang",
-    nomorPunggung: 8,
-    kewarganegaraan: "Indonesia"
-  },
-  {
-    id: 2,
-    nama: "Rizky Pratama",
-    klub: "Sriwijaya United",
-    posisi: "penyerang",
-    nomorPunggung: 9,
-    kewarganegaraan: "Indonesia"
-  },
-  {
-    id: 3,
-    nama: "Andi Saputra",
-    klub: "Palembang FC",
-    posisi: "bek",
-    nomorPunggung: 4,
-    kewarganegaraan: "Indonesia"
-  }
-];
-
-// ID berikutnya
-let nextId = 4;
-
+// ======================================================
 // GET /
-// Menampilkan informasi API
+// ======================================================
 app.get("/", (req, res) => {
   res.json({
     nama: "Nada Salsabilah",
     nim: "2428240136",
     topik: 24,
+    keterangan: "Versi Terhubung dengan MongoDB",
     endpoint: [
       "GET /players",
       "GET /players/:id",
       "POST /players",
       "PUT /players/:id",
-      "DELETE /players/:id",
-      "GET /players?posisi=gelandang"
+      "DELETE /players/:id"
     ]
   });
 });
 
-
 // ======================================================
-// GET /players
-// Mengambil semua data pemain
+// GET /players (DENGAN FILTER, SORT, PROJECTION, PAGINATION)
 // ======================================================
-app.get("/players", (req, res) => {
-  const { posisi } = req.query;
+app.get("/players", async (req, res) => {
+  try {
+    // 1. FILTERING (Contoh: ?posisi=gelandang&klub=Garuda FC)
+    const queryObj = { ...req.query };
+    const excludedFields = ['page', 'sort', 'limit', 'fields'];
+    excludedFields.forEach(el => delete queryObj[el]);
 
-  // Jika ada filter posisi
-  if (posisi) {
-    const hasilFilter = players.filter(
-      (player) => player.posisi.toLowerCase() === posisi.toLowerCase()
-    );
+    // Tambahkan regex agar pencarian case-insensitive (huruf besar/kecil sama saja)
+    if (queryObj.posisi) queryObj.posisi = { $regex: new RegExp(queryObj.posisi, 'i') };
+    
+    let query = Player.find(queryObj);
 
-    return res.status(200).json(hasilFilter);
+    // 2. SORTING (Contoh: ?sort=nomorPunggung atau ?sort=-nama)
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('-createdAt'); // Default sort data terbaru
+    }
+
+    // 3. PROJECTION / Field Limiting (Contoh: ?fields=nama,klub)
+    if (req.query.fields) {
+      const fields = req.query.fields.split(',').join(' ');
+      query = query.select(fields);
+    } else {
+      query = query.select('-__v'); // Hilangkan field __v bawaan mongoose
+    }
+
+    // 4. PAGINATION (Contoh: ?page=1&limit=5)
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    // Eksekusi Query
+    const players = await query;
+
+    res.status(200).json({
+      status: "success",
+      total_data: players.length,
+      data: players
+    });
+
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
   }
-
-  // Jika tidak ada filter
-  res.status(200).json(players);
 });
-
 
 // ======================================================
 // GET /players/:id
-// Mengambil satu data pemain berdasarkan id
 // ======================================================
-app.get("/players/:id", (req, res) => {
-  const id = parseInt(req.params.id);
+app.get("/players/:id", async (req, res) => {
+  try {
+    // Gunakan findById bawaan Mongoose
+    const player = await Player.findById(req.params.id);
 
-  const player = players.find((player) => player.id === id);
+    if (!player) {
+      return res.status(404).json({
+        status: "error",
+        message: `Data dengan id ${req.params.id} tidak ditemukan`,
+        data: null
+      });
+    }
 
-  if (!player) {
-    return res.status(404).json({
-      status: "error",
-      message: `Data dengan id ${id} tidak ditemukan`,
-      data: null
-    });
+    res.status(200).json(player);
+  } catch (error) {
+    res.status(500).json({ status: "error", message: "Format ID tidak valid atau terjadi kesalahan server" });
   }
-
-  res.status(200).json(player);
 });
-
 
 // ======================================================
 // POST /players
-// Body:
-// {
-//   "nama": "Fajar Ramadhan",
-//   "klub": "Garuda FC",
-//   "posisi": "gelandang",
-//   "nomorPunggung": 8,
-//   "kewarganegaraan": "Indonesia"
-// }
 // ======================================================
-app.post("/players", cekApiKey, (req, res) => {
-  const {
-    nama,
-    klub,
-    posisi,
-    nomorPunggung,
-    kewarganegaraan
-  } = req.body;
+app.post("/players", cekApiKey, async (req, res) => {
+  try {
+    // Karena kita sudah mendefinisikan rules di Mongoose Schema (required, enum, dll),
+    // Mongoose akan otomatis memvalidasinya saat .create() dipanggil.
+    const playerBaru = await Player.create(req.body);
 
-  // Validasi field wajib
-  if (!nama || !klub || !posisi || nomorPunggung === undefined) {
-    return res.status(400).json({
+    res.status(201).json({
+      status: "success",
+      message: "Data pemain berhasil ditambahkan",
+      data: playerBaru
+    });
+  } catch (error) {
+    // Jika validasi mongoose gagal (misal posisi salah / nama kosong)
+    res.status(400).json({
       status: "error",
-      message: "nama, klub, posisi, dan nomorPunggung wajib diisi",
+      message: error.message,
       data: null
     });
   }
-
-  // Validasi posisi
-  const posisiValid = ["kiper", "bek", "gelandang", "penyerang"];
-
-  if (!posisiValid.includes(posisi.toLowerCase())) {
-    return res.status(400).json({
-      status: "error",
-      message: "posisi harus kiper, bek, gelandang, atau penyerang",
-      data: null
-    });
-  }
-
-  // Validasi nomor punggung
-  if (typeof nomorPunggung !== "number") {
-    return res.status(400).json({
-      status: "error",
-      message: "nomorPunggung harus berupa angka",
-      data: null
-    });
-  }
-
-  // Membuat data pemain baru
-  const playerBaru = {
-    id: nextId++,
-    nama,
-    klub,
-    posisi: posisi.toLowerCase(),
-    nomorPunggung,
-    kewarganegaraan
-  };
-
-  players.push(playerBaru);
-
-  res.status(201).json({
-    status: "success",
-    message: "Data pemain berhasil ditambahkan",
-    data: playerBaru
-  });
 });
-
 
 // ======================================================
 // PUT /players/:id
-// Mengubah seluruh data pemain
 // ======================================================
-// Body:
-// {
-//   "nama": "Fajar Ramadhan",
-//   "klub": "Garuda FC",
-//   "posisi": "gelandang",
-//   "nomorPunggung": 10,
-//   "kewarganegaraan": "Indonesia"
-// }
-// ======================================================
-app.put("/players/:id", cekApiKey, (req, res) => {
-  const id = parseInt(req.params.id);
+app.put("/players/:id", cekApiKey, async (req, res) => {
+  try {
+    // runValidators: true memastikan validasi Mongoose (seperti pengecekan posisi) tetap berjalan saat update
+    const playerDiubah = await Player.findByIdAndUpdate(
+      req.params.id, 
+      req.body, 
+      { new: true, runValidators: true } 
+    );
 
-  const index = players.findIndex((player) => player.id === id);
+    if (!playerDiubah) {
+      return res.status(404).json({
+        status: "error",
+        message: `Data dengan id ${req.params.id} tidak ditemukan`,
+        data: null
+      });
+    }
 
-  // Jika data tidak ditemukan
-  if (index === -1) {
-    return res.status(404).json({
-      status: "error",
-      message: `Data dengan id ${id} tidak ditemukan`,
-      data: null
+    res.status(200).json({
+      status: "success",
+      message: `Data pemain dengan id ${req.params.id} berhasil diubah`,
+      data: playerDiubah
     });
+  } catch (error) {
+    res.status(400).json({ status: "error", message: error.message, data: null });
   }
-
-  const {
-    nama,
-    klub,
-    posisi,
-    nomorPunggung,
-    kewarganegaraan
-  } = req.body;
-
-  // Validasi field wajib
-  if (!nama || !klub || !posisi || nomorPunggung === undefined) {
-    return res.status(400).json({
-      status: "error",
-      message: "nama, klub, posisi, dan nomorPunggung wajib diisi",
-      data: null
-    });
-  }
-
-  // Validasi posisi
-  const posisiValid = ["kiper", "bek", "gelandang", "penyerang"];
-
-  if (!posisiValid.includes(posisi.toLowerCase())) {
-    return res.status(400).json({
-      status: "error",
-      message: "posisi harus kiper, bek, gelandang, atau penyerang",
-      data: null
-    });
-  }
-
-  // Validasi nomor punggung
-  if (typeof nomorPunggung !== "number") {
-    return res.status(400).json({
-      status: "error",
-      message: "nomorPunggung harus berupa angka",
-      data: null
-    });
-  }
-
-  // Mengganti seluruh data pemain
-  const playerDiubah = {
-    id,
-    nama,
-    klub,
-    posisi: posisi.toLowerCase(),
-    nomorPunggung,
-    kewarganegaraan
-  };
-
-  players[index] = playerDiubah;
-
-  res.status(200).json({
-    status: "success",
-    message: `Data pemain dengan id ${id} berhasil diubah`,
-    data: playerDiubah
-  });
 });
-
 
 // ======================================================
 // DELETE /players/:id
-// Menghapus data pemain
 // ======================================================
-app.delete("/players/:id", cekApiKey, (req, res) => {
-  const id = parseInt(req.params.id);
+app.delete("/players/:id", cekApiKey, async (req, res) => {
+  try {
+    const playerDihapus = await Player.findByIdAndDelete(req.params.id);
 
-  const index = players.findIndex((player) => player.id === id);
+    if (!playerDihapus) {
+      return res.status(404).json({
+        status: "error",
+        message: `Data dengan id ${req.params.id} tidak ditemukan`,
+        data: null
+      });
+    }
 
-  // Jika data tidak ditemukan
-  if (index === -1) {
-    return res.status(404).json({
-      status: "error",
-      message: `Data dengan id ${id} tidak ditemukan`,
+    res.status(200).json({
+      status: "success",
+      message: `Data pemain dengan id ${req.params.id} berhasil dihapus`,
       data: null
     });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: "Format ID tidak valid atau terjadi kesalahan server" });
   }
-
-  players.splice(index, 1);
-
-  res.status(200).json({
-    status: "success",
-    message: `Data pemain dengan id ${id} berhasil dihapus`,
-    data: null
-  });
 });
-
 
 // ======================================================
 // Catch-all 404
-// Menangani endpoint yang tidak terdaftar
 // ======================================================
 app.use((req, res) => {
   res.status(404).json({
@@ -311,14 +250,12 @@ app.use((req, res) => {
   });
 });
 
-
 // Menjalankan server
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
-    console.log(`Server berjalan di http://localhost:${PORT}`);
+    console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
   });
 }
-
 
 // Export app untuk Vercel
 module.exports = app;
